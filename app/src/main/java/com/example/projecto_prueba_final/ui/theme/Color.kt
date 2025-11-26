@@ -2,13 +2,18 @@ package com.example.projecto_prueba_final.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Blue80 = Color(0xFFADC6FF)
-val BlueGrey80 = Color(0xFFB8C5D6)
-val LightBlue80 = Color(0xFFD2E4FF)
+// Nueva paleta de colores "Games Top"
 
-val Blue40 = Color(0xFF2E5AAC)
-val BlueGrey40 = Color(0xFF53647D)
-val LightBlue40 = Color(0xFF7B9BCC)
+// Tema Oscuro
+val DarkBackground = Color(0xFF121212) // Fondo oscuro principal
+val DarkSurface = Color(0xFF1E1E1E)    // Color de superficie para tarjetas
+val NeonGreen = Color(0xFF39FF14)      // Acento principal (botones, etc.)
+val VibrantMagenta = Color(0xFFFF00FF) // Acento secundario
+val OffWhite = Color(0xFFE0E0E0)        // Texto principal
+val LightGrey = Color(0xFF888888)        // Texto secundario
 
-val VeryDarkGray = Color(0xFF121212)
-val DarkGray = Color(0xFF1E1E1E)
+// Tema Claro (Alternativa, aunque nos centraremos en el oscuro)
+val LightBackground = Color(0xFFF5F5F5)
+val LightSurface = Color(0xFFFFFFFF)
+val DarkCharcoal = Color(0xFF333333)     // Texto en tema claro
+val BrightBlue = Color(0xFF007BFF)      // Acento principal en tema claro

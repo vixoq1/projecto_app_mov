@@ -1,28 +1,31 @@
 package com.example.projecto_prueba_final.data
 
-import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import android.content.Context
 
-@Database(
-    entities = [Usuario::class],
-    version = 1,
-    exportSchema = false
-)
+@Database(entities = [Producto::class, User::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun usuarioDao(): UsuarioDao
+    abstract fun productoDao(): ProductoDao
+    abstract fun userDao(): UserDao
 
     companion object {
-        @Volatile private var INSTANCE: AppDatabase? = null
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
 
-        fun get(context: Context): AppDatabase =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "usuarios.db"
-                ).build().also { INSTANCE = it }
+                    "productos.db"
+                )
+                .fallbackToDestructiveMigration() // Añadido para manejar cambios de versión
+                .build()
+                INSTANCE = instance
+                instance
             }
+        }
     }
 }
