@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
@@ -14,41 +17,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-
-data class FAQItem(val question: String, val answer: String)
-
-private val faqList = listOf(
-    FAQItem(
-        question = "¿Cómo puedo comprar un producto?",
-        answer = "Para comprar un producto, simplemente navega a la categoría deseada, selecciona el producto que te interesa y presiona el botón 'Comprar'. El producto se eliminará de la lista, simulando la compra."
-    ),
-    FAQItem(
-        question = "¿Qué métodos de pago aceptan?",
-        answer = "Actualmente, esta es una aplicación de demostración y la función de compra es simulada. No se procesan pagos reales."
-    ),
-    FAQItem(
-        question = "¿Puedo editar un producto después de agregarlo?",
-        answer = "Sí. En la lista de productos, cada artículo tiene un ícono de lápiz (Editar). Al presionarlo, se abrirá un formulario con los datos del producto para que puedas modificarlos."
-    ),
-    FAQItem(
-        question = "La imagen que seleccioné no se muestra, ¿qué hago?",
-        answer = "Asegúrate de que la imagen seleccionada sea un formato compatible (JPG, PNG, etc.) y que la aplicación tenga los permisos necesarios. Si el problema persiste, la imagen podría estar corrupta."
-    ),
-    FAQItem(
-        question = "¿Cómo puedo buscar un producto específico?",
-        answer = "En la parte superior de la lista de productos, encontrarás una barra de búsqueda. Simplemente escribe el nombre del producto que buscas y la lista se filtrará automáticamente."
-    )
-)
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.projecto_prueba_final.data.Faq
+import com.example.projecto_prueba_final.ui.FaqViewModel
+import com.example.projecto_prueba_final.ui.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FAQScreen(onNavigateBack: () -> Unit) {
+fun FAQScreen(vm: FaqViewModel, userRole: UserRole, onNavigateBack: () -> Unit) {
+    val faqs by vm.faqs.collectAsStateWithLifecycle()
+    var showDialog by remember { mutableStateOf(false) }
+
+    if (showDialog) {
+        FaqDialog(vm = vm, onDismiss = { showDialog = false })
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Dudas Frecuentes") },
                 navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, "Volver") } }
             )
+        },
+        floatingActionButton = {
+            if (userRole == UserRole.ADMIN || userRole == UserRole.SUPPORT) {
+                FloatingActionButton(onClick = { 
+                    vm.editar(null)
+                    showDialog = true 
+                }) {
+                    Icon(Icons.Default.Add, contentDescription = "Añadir FAQ")
+                }
+            }
         }
     ) { padding ->
         LazyColumn(
@@ -58,15 +57,28 @@ fun FAQScreen(onNavigateBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(faqList) { faq ->
-                FAQEntry(faq = faq)
+            items(faqs, key = { it.id }) { faq ->
+                FAQEntry(
+                    faq = faq, 
+                    userRole = userRole, 
+                    onEdit = {
+                        vm.editar(faq)
+                        showDialog = true
+                    }, 
+                    onDelete = { vm.eliminar(faq) }
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FAQEntry(faq: FAQItem) {
+private fun FAQEntry(
+    faq: Faq, 
+    userRole: UserRole, 
+    onEdit: () -> Unit, 
+    onDelete: () -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Card(
@@ -85,10 +97,21 @@ private fun FAQEntry(faq: FAQItem) {
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Cerrar" else "Expandir"
-                )
+                if (userRole == UserRole.ADMIN || userRole == UserRole.SUPPORT) {
+                    Row {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar")
+                        }
+                        IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                        }
+                    }
+                } else {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = if (expanded) "Cerrar" else "Expandir"
+                    )
+                }
             }
             AnimatedVisibility(visible = expanded) {
                 Column {
@@ -100,4 +123,37 @@ private fun FAQEntry(faq: FAQItem) {
             }
         }
     }
+}
+
+@Composable
+private fun FaqDialog(vm: FaqViewModel, onDismiss: () -> Unit) {
+    val formState by vm.form.collectAsStateWithLifecycle()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { 
+            Button(onClick = {
+                vm.guardar()
+                onDismiss()
+            }) { Text("Guardar") } 
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        title = { Text(if(formState.id == 0) "Nueva Pregunta" else "Editar Pregunta") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = formState.question,
+                    onValueChange = { vm.onFormChange(it, formState.answer) },
+                    label = { Text("Pregunta") }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = formState.answer,
+                    onValueChange = { vm.onFormChange(formState.question, it) },
+                    label = { Text("Respuesta") },
+                    minLines = 3
+                )
+            }
+        }
+    )
 }

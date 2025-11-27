@@ -92,4 +92,8 @@ class ProductoViewModel(private val repo: ProductoRepository) : ViewModel() {
     fun clearSnackbarMessage() {
         _snackbarMessage.value = null
     }
+
+    fun clearProduct() {
+        _producto.value = null
+    }
 }

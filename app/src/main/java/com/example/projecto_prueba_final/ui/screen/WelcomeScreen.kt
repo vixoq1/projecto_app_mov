@@ -11,11 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.projecto_prueba_final.ui.ProductoViewModel
+import com.example.projecto_prueba_final.ui.UserRole
 
 data class Category(val name: String, val icon: ImageVector)
 
@@ -30,7 +32,13 @@ private val predefinedCategories = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WelcomeScreen(vm: ProductoViewModel, onCategorySelected: (String) -> Unit, onNavigateToFAQ: () -> Unit, onLogout: () -> Unit) {
+fun WelcomeScreen(
+    vm: ProductoViewModel, 
+    userRole: UserRole, // <-- Se necesita el rol para el debug
+    onCategorySelected: (String) -> Unit, 
+    onNavigateToFAQ: () -> Unit, 
+    onLogout: () -> Unit
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -56,7 +64,11 @@ fun WelcomeScreen(vm: ProductoViewModel, onCategorySelected: (String) -> Unit, o
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Explora nuestras categorías", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-            Spacer(modifier = Modifier.height(24.dp))
+            
+            // --- TEXTO DE DEPURACIÓN ---
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("Rol Actual: ${userRole.name}", color = Color.Red, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(12.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),

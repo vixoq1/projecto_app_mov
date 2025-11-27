@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class UserRole { ANONYMOUS, USER, ADMIN }
+enum class UserRole { ANONYMOUS, USER, ADMIN, MODERATOR, SUPPORT }
 
 // --- Login State ---
 data class LoginFormState(
@@ -47,18 +47,37 @@ class AuthViewModel(private val userDao: UserDao) : ViewModel() {
     fun login() {
         viewModelScope.launch {
             val state = _loginFormState.value
+            val email = state.email
+            val password = state.password
 
-            // Comprobación de credenciales de ADMIN
-            if (state.email.equals("ADMIN@duocuc.cl", ignoreCase = true) && state.password == "admin123") {
-                _userRole.value = UserRole.ADMIN
-                _loginFormState.update { it.copy(loginSuccess = true, loginError = null) }
-                return@launch
+            // Comprobación de credenciales de roles especiales
+            when {
+                email.equals("ADMIN", ignoreCase = true) && password == "ADMIN" -> {
+                    _userRole.value = UserRole.ADMIN
+                    _loginFormState.update { it.copy(loginSuccess = true, loginError = null) }
+                    return@launch
+                }
+                email.equals("ADMIN@duocuc.cl", ignoreCase = true) && password == "admin123" -> {
+                    _userRole.value = UserRole.ADMIN
+                    _loginFormState.update { it.copy(loginSuccess = true, loginError = null) }
+                    return@launch
+                }
+                email.equals("moderador@duocuc.cl", ignoreCase = true) && password == "moderador123" -> {
+                    _userRole.value = UserRole.MODERATOR
+                    _loginFormState.update { it.copy(loginSuccess = true, loginError = null) }
+                    return@launch
+                }
+                email.equals("support@duocuc.cl", ignoreCase = true) && password == "support123" -> {
+                    _userRole.value = UserRole.SUPPORT
+                    _loginFormState.update { it.copy(loginSuccess = true, loginError = null) }
+                    return@launch
+                }
             }
 
-            val user = userDao.findByEmail(state.email)
+            val user = userDao.findByEmail(email)
             if (user == null) {
                 _loginFormState.update { it.copy(loginError = "Usuario no encontrado") }
-            } else if (user.password != state.password) {
+            } else if (user.password != password) {
                 _loginFormState.update { it.copy(loginError = "Contraseña incorrecta") }
             } else {
                 _userRole.value = UserRole.USER
@@ -79,10 +98,13 @@ class AuthViewModel(private val userDao: UserDao) : ViewModel() {
                 _signUpFormState.update { it.copy(signUpError = "Las contraseñas no coinciden") }
                 return@launch
             }
-            if (state.email.equals("ADMIN@duocuc.cl", ignoreCase = true)) {
+            
+            val reservedEmails = listOf("ADMIN", "ADMIN@duocuc.cl", "moderador@duocuc.cl", "support@duocuc.cl")
+            if (reservedEmails.any { it.equals(state.email, ignoreCase = true) }) {
                 _signUpFormState.update { it.copy(signUpError = "Este email está reservado.") }
                 return@launch
             }
+
             val newUser = User(email = state.email, password = state.password)
             val result = userDao.insert(newUser)
             if (result == -1L) {
@@ -97,6 +119,6 @@ class AuthViewModel(private val userDao: UserDao) : ViewModel() {
     fun logout() {
         _loginFormState.value = LoginFormState()
         _signUpFormState.value = SignUpFormState()
-        _userRole.value = UserRole.ANONYMOUS // Resetea el rol al cerrar sesión
+        _userRole.value = UserRole.ANONYMOUS
     }
 }

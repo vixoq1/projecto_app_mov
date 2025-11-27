@@ -8,7 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,27 +30,14 @@ fun ProductoDetailScreen(
     productoId: Int,
     userRole: UserRole,
     onNavigateBack: () -> Unit,
-    onBuy: (Producto) -> Unit
+    onBuy: (Producto) -> Unit,
+    onEdit: (Producto) -> Unit
 ) {
     LaunchedEffect(productoId) {
         vm.loadProductById(productoId)
     }
 
     val producto by vm.producto.collectAsStateWithLifecycle()
-    var showEditDialog by remember { mutableStateOf(false) }
-
-    if (showEditDialog) {
-        ProductoDialog(
-            vm = vm,
-            onDismiss = { showEditDialog = false },
-            onSaved = { 
-                showEditDialog = false 
-                // Recargar el producto para ver los cambios
-                vm.loadProductById(productoId)
-            },
-            isCategoryPreselected = true // En edición, la categoría no se puede cambiar
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -56,11 +45,8 @@ fun ProductoDetailScreen(
                 title = { Text(producto?.nombre ?: "Cargando...") },
                 navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, "Volver") } },
                 actions = {
-                    if (userRole == UserRole.ADMIN && producto != null) {
-                        IconButton(onClick = { 
-                            vm.editar(producto)
-                            showEditDialog = true 
-                        }) {
+                    if ((userRole == UserRole.ADMIN || userRole == UserRole.MODERATOR) && producto != null) {
+                        IconButton(onClick = { onEdit(producto!!) }) {
                             Icon(Icons.Default.Edit, contentDescription = "Editar Producto")
                         }
                     }
